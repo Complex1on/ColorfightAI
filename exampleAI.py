@@ -29,7 +29,7 @@ if __name__ == '__main__':
                         # If that cell is valid(current cell + direction could be
                         # out of range) and that cell is not mine
                         if cc != None:
-                            if cc.owner != g.uid:
+                            if cc.owner != g.uid and cc.takeTime < 5:
                                 # Attack the cell and print the result
                                 # if (True, None, None) is printed, it means attack
                                 # is successful, otherwise it will print the error
