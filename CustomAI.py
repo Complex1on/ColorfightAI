@@ -45,20 +45,59 @@ def lowest_atktime(adjcells):
     print(lowesttime)
     return lowesttime
 
-def attack_random():
+def expand():
     #picks one of my cells and a random cell next to it to attack
     #picks random surrounding cell and attacks it
-    cell = random.choice(surrounding_cells(my_cells()))
-    cinfo = g.GetCell(cell[0],cell[1])
-    if cinfo.takeTime < 5:
-        print(g.AttackCell(cell[0],cell[1]))
+    cells = surrounding_cells(my_cells())
+    while (cells != []):
+        #checks for gold cell and attacks it
+        for i in range(len(cells)):
+            cc = g.GetCell(cells[i][0],cells[i][1])
+            if cc.cellType == 'gold':
+                print(g.AttackCell(cells[i][0],cells[i][1]))
+        #goes throught 
+        for i in range(len(cells)):
+            cc = g.GetCell(cells[i][0],cells[i][1])
+            if cc.takeTime > 5:
+                cells.pop(i)
+            elif g.cdTime==0.0:
+                print(g.AttackCell(cells[i][0],cells[i][1]))
+                cells.pop(i)
 
+            
+    
+    '''
+    #picks a random surrounding cell and attacks it 
+    randcell = random.choice(surrounding_cells(my_cells()))
+    cinfo = g.GetCell(randcell[0],randcell[1])
+    if cinfo.takeTime < 5:
+        print(g.AttackCell(randcell[0],randcell[1]))
+    '''
+    
 def attack_lowest():
     target = lowest_atktime(surrounding_cells(my_cells()))
     print(g.AttackCell(target[0],target[1]))
 
 def defend_base():
     #Need to implement defending a base
+    #find base 
+    mycells = my_cells()
+    mybase = [[0,0]]
+    for i in range(len(mycells)):
+        x = mycells[i][0]
+        y = mycells[i][1]
+        cc = g.GetCell(x,y)
+        if cc.buildType == 'base':
+            mybase = []
+            mybase.append([x,y])
+    for x in range(-1,2):
+        for y in range(-1,2):
+            cell = g.GetCell(mybase[0][0]+x,mybase[0][1]+y)
+            if cell.takeTime < 4 and cell != None and cell.owner == g.uid:
+                print(g.AttackCell(x,y))
+        print("hi")
+    
+
     return 0
 
 
@@ -76,7 +115,8 @@ if __name__ == '__main__':
         print('hello')
         while True:
             g.Refresh()
-            attack_random()
+            expand()
+            
             
         
     else:
