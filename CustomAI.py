@@ -1,7 +1,6 @@
-# You need to import colorfight for all the APIs
+ # You need to import colorfight for all the APIs
 import colorfight
 import random
-
 
 def my_cells():
     #Goes through the board and finds user's cells
@@ -11,114 +10,118 @@ def my_cells():
         for y in range(g.height):
             c = g.GetCell(x,y)
             if c.owner == g.uid:
-                mycells.append([x,y])
+                mycells.append(c)
     #returns a list of users cells in list form of [0] = x , [1] = y
     #print(mycells)
     return mycells
 
 def surrounding_cells(mycells):
+    #takes mycells and finds the surrounding
     direct = [[0,1], [0,-1], [1, 0], [-1,0]]
     adjacentcells = []
-    for i in range(len(mycells)):
+    for cell in mycells:
         for d in range(4):
-            x = mycells[i][0]+direct[d][0]
-            y = mycells[i][1]+direct[d][1]
+            x = cell.x+direct[d][0]
+            y = cell.y+direct[d][1]
             cc = g.GetCell(x,y)
-            if cc != None and cc.owner != g.uid:
-                adjacentcells.append([x,y])
-    #print(adjacentcells)            
+            if cc != None and cc.owner != g.uid and (cc not in adjacentcells):
+                adjacentcells.append(cc)
+    #print(len(adjacentcells)            
     return adjacentcells
-            
-def lowest_atktime(adjcells):
-    xi = adjcells[0][0]
-    yi = adjcells[0][1]
-    lowesttime = [xi,yi]
-    for i in range(len(adjcells)):
-        x = adjcells[i][0]
-        y = adjcells[i][1]
-        c = g.GetCell(x ,y )
-        c2 = g.GetCell(lowesttime[0],lowesttime[1]) 
-        if (c.takeTime < c2.takeTime):
-            lowesttime = []
-            lowesttime.append([x,y])
-            
-    print(lowesttime)
-    return lowesttime
 
-def expand():
+def find_gold_cells():
+    #Finds all golden cells on the board
+    gold_cells = []
+    for x in range(g.width):
+        for y in range(g.height):
+            c = g.GetCell(x,y)
+            if c.cellType == 'gold':
+                gold_cells.append(c)
+    return gold_cells
+
+def find_energy_cells():
+    #Find all the energy cells on the board
+    energy_cells = []
+    for x in range(g.width):
+        for y in range(g.height):
+            c = g.GetCell(x,y)
+            if c.cellType == 'energy':
+                energy_cells.append(c)
+    return energy_cells
+
+def distance_to(start,end):
+    return (abs(end.x-start.x) + abs(end.y-start.y))
+    
+def evaluate( c, enval, goldval, empty, disten, distgold ):
+    goldencells = find_gold_cells()
+    energycells = find_energy_cells()
+    shortgold = 999
+    shortenergy = 999
+    bonus = 0
+    for en in energycells:
+        dist = distance_to(c,en)
+        if dist < shortenergy:
+            shortenergy = dist
+    for gold in goldencells:
+        dist = distance_to(c,gold)
+        if dist < shortgold:
+            shortgold = dist
+    if shortenergy < 7:
+        bonus += disten
+    if shortgold < 7:
+        bonus += distgold
+    if c.owner == 0:
+        bonus += empty
+    if c.cellType == 'gold':
+        bonus += goldval
+    if c.cellType == 'energy':
+        bonus += enval
+    return bonus/c.takeTime
+    
+
+def smart_expand(enval, goldval, empty, disten, distgold):
+    g.Refresh()
+    surcells = surrounding_cells(my_cells())
+    attacktarget = random.choice(surcells)
+    bestval = evaluate(attacktarget,enval, goldval, empty, disten, distgold)
+    for cell in surcells:
+        value = evaluate(cell,enval, goldval, empty, disten, distgold)
+        if value > bestval:
+            attacktarget = cell
+    print(g.AttackCell(attacktarget.x,attacktarget.y))
+    return "working"
+
+def rand_expand():
     #picks one of my cells and a random cell next to it to attack
     #picks random surrounding cell and attacks it
-    cells = surrounding_cells(my_cells())
-    while (cells != []):
-        #checks for gold cell and attacks it
-        for i in range(len(cells)):
-            cc = g.GetCell(cells[i][0],cells[i][1])
-            if cc.cellType == 'gold':
-                print(g.AttackCell(cells[i][0],cells[i][1]))
-        #goes throught 
-        for i in range(len(cells)):
-            cc = g.GetCell(cells[i][0],cells[i][1])
-            if cc.takeTime > 5:
-                cells.pop(i)
-            elif g.cdTime==0.0:
-                print(g.AttackCell(cells[i][0],cells[i][1]))
-                cells.pop(i)
-
-            
-    
-    '''
-    #picks a random surrounding cell and attacks it 
     randcell = random.choice(surrounding_cells(my_cells()))
-    cinfo = g.GetCell(randcell[0],randcell[1])
+    cinfo = g.GetCell(randcell.x,randcell.y)
     if cinfo.takeTime < 5:
-        print(g.AttackCell(randcell[0],randcell[1]))
-    '''
+        print(g.AttackCell(randcell.x,randcell.y))
+    #picks a random surrounding cell and attacks it 
+
+def behaviour():
+    if g.baseNum < 3 and g.gold > 30:
+        randcell = random.choice(my_cells())
+        g.BuildBase(randcell.x,randcell.y)
+    if g.cellNum < 50:
+        enval = 5
+        goldval = 3
+        empty = 5
+        disten = 10
+        distgold = 10
+        smart_expand(enval, goldval, empty, disten, distgold)
     
-def attack_lowest():
-    target = lowest_atktime(surrounding_cells(my_cells()))
-    print(g.AttackCell(target[0],target[1]))
-
-def defend_base():
-    #Need to implement defending a base
-    #find base 
-    mycells = my_cells()
-    mybase = [[0,0]]
-    for i in range(len(mycells)):
-        x = mycells[i][0]
-        y = mycells[i][1]
-        cc = g.GetCell(x,y)
-        if cc.buildType == 'base':
-            mybase = []
-            mybase.append([x,y])
-    for x in range(-1,2):
-        for y in range(-1,2):
-            cell = g.GetCell(mybase[0][0]+x,mybase[0][1]+y)
-            if cell.takeTime < 4 and cell != None and cell.owner == g.uid:
-                print(g.AttackCell(x,y))
-        print("hi")
-    
-
-    return 0
-
-
 
 if __name__ == '__main__':
     # Instantiate a Game object.
     g = colorfight.Game()
-    # You need to join the game using JoinGame(). 'MyAI' is the name of your
-    # AI, you can change that to anything you want. This function will generate
-    # a token file in the folder which preserves your identity so that you can
-    # stop your AI and continue from the last time you quit. 
-    # If there's a token and the token is valid, JoinGame() will continue. If
-    # not, you will join as a new player.
-    if g.JoinGame('test'):
+    if g.JoinGame('Dumb'):
         print('hello')
         while True:
             g.Refresh()
-            expand()
-            
-            
-        
+            #rand_expand() 
+            behaviour()     
     else:
         print("Failed to join the game!")
 
