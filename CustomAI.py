@@ -29,47 +29,17 @@ def surrounding_cells(mycells):
     #print(len(adjacentcells)            
     return adjacentcells
 
-def find_gold_cells():
-    #Finds all golden cells on the board
-    gold_cells = []
-    for x in range(g.width):
-        for y in range(g.height):
-            c = g.GetCell(x,y)
-            if c.cellType == 'gold':
-                gold_cells.append(c)
-    return gold_cells
-
-def find_energy_cells():
-    #Find all the energy cells on the board
-    energy_cells = []
-    for x in range(g.width):
-        for y in range(g.height):
-            c = g.GetCell(x,y)
-            if c.cellType == 'energy':
-                energy_cells.append(c)
-    return energy_cells
-
-def distance_to(start,end):
-    return (abs(end.x-start.x) + abs(end.y-start.y))
-    
-def evaluate( c, enval, goldval, empty, disten, distgold ):
-    goldencells = find_gold_cells()
-    energycells = find_energy_cells()
-    shortgold = 999
-    shortenergy = 999
+def GetAdjacent( cell ):
+        up = g.GetCell( cell.x, cell.y - 1 )
+        right = g.GetCell( cell.x + 1, cell.y )
+        down = g.GetCell( cell.x, cell.y + 1 )
+        left = g.GetCell( cell.x - 1, cell.y )
+        return ( up, right, down, left )
+     
+def evaluate( c, enval, goldval, empty):
     bonus = 0
-    for en in energycells:
-        dist = distance_to(c,en)
-        if dist < shortenergy:
-            shortenergy = dist
-    for gold in goldencells:
-        dist = distance_to(c,gold)
-        if dist < shortgold:
-            shortgold = dist
-    if shortenergy < 7:
-        bonus += disten
-    if shortgold < 7:
-        bonus += distgold
+    if c.takeTime < 5:
+        bonus += 3
     if c.owner == 0:
         bonus += empty
     if c.cellType == 'gold':
@@ -77,18 +47,17 @@ def evaluate( c, enval, goldval, empty, disten, distgold ):
     if c.cellType == 'energy':
         bonus += enval
     return bonus/c.takeTime
-    
 
-def smart_expand(enval, goldval, empty, disten, distgold):
+def smart_expand(enval, goldval, empty, boostval):
     g.Refresh()
     surcells = surrounding_cells(my_cells())
     attacktarget = random.choice(surcells)
-    bestval = evaluate(attacktarget,enval, goldval, empty, disten, distgold)
+    bestval = evaluate(attacktarget,enval, goldval, empty)
     for cell in surcells:
-        value = evaluate(cell,enval, goldval, empty, disten, distgold)
+        value = evaluate(cell,enval, goldval, empty)
         if value > bestval:
             attacktarget = cell
-    print(g.AttackCell(attacktarget.x,attacktarget.y))
+    print(g.AttackCell(attacktarget.x,attacktarget.y,boost=boostval))
     return "working"
 
 def rand_expand():
@@ -96,27 +65,38 @@ def rand_expand():
     #picks random surrounding cell and attacks it
     randcell = random.choice(surrounding_cells(my_cells()))
     cinfo = g.GetCell(randcell.x,randcell.y)
-    if cinfo.takeTime < 5:
+    if cinfo.takeTime < 3:
         print(g.AttackCell(randcell.x,randcell.y))
     #picks a random surrounding cell and attacks it 
 
 def behaviour():
+    boostval = False
     if g.baseNum < 3 and g.gold > 30:
         randcell = random.choice(my_cells())
         g.BuildBase(randcell.x,randcell.y)
+    if g.energy >=45:
+        boostval = True
     if g.cellNum < 50:
-        enval = 5
-        goldval = 3
-        empty = 5
-        disten = 10
-        distgold = 10
-        smart_expand(enval, goldval, empty, disten, distgold)
+        enval = 10
+        goldval = 5
+        empty = 7
+        smart_expand(enval, goldval, empty, boostval)
+    if g.cellNum < 150 and g.cellNum > 50:
+        enval = 10
+        goldval = 5
+        empty = 7
+        smart_expand(enval, goldval, empty, boostval)  
+    else: 
+        enval = 3
+        goldval = 15
+        empty = 8
+        smart_expand(enval, goldval, empty, boostval)
     
 
 if __name__ == '__main__':
     # Instantiate a Game object.
     g = colorfight.Game()
-    if g.JoinGame('Dumb'):
+    if g.JoinGame('C2'):
         print('hello')
         while True:
             g.Refresh()
