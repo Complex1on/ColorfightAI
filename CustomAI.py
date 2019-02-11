@@ -92,7 +92,6 @@ def behaviour():
         empty = 8
         smart_expand(enval, goldval, empty, boostval)
     
-
 if __name__ == '__main__':
     # Instantiate a Game object.
     g = colorfight.Game()

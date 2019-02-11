@@ -15,17 +15,26 @@ def my_cells():
     #print(mycells)
     return mycells
 
+def GetAdjacent( cell ):
+        up = g.GetCell( cell.x, cell.y - 1 )
+        right = g.GetCell( cell.x + 1, cell.y )
+        down = g.GetCell( cell.x, cell.y + 1 )
+        left = g.GetCell( cell.x - 1, cell.y )
+        return ( up, right, down, left )
+
 def surrounding_cells(mycells):
     #takes mycells and finds the surrounding
-    direct = [[0,1], [0,-1], [1, 0], [-1,0]]
     adjacentcells = []
     for cell in mycells:
-        for d in range(4):
-            x = cell.x+direct[d][0]
-            y = cell.y+direct[d][1]
-            cc = g.GetCell(x,y)
-            if cc != None and cc.owner != g.uid and (cc not in adjacentcells):
-                adjacentcells.append(cc)
+        up, right, down, left = GetAdjacent(cell)
+        if up != None and up.owner != g.uid and (up not in adjacentcells): 
+            adjacentcells.append(up)
+        if right != None and right.owner != g.uid and (right not in adjacentcells): 
+            adjacentcells.append(right)
+        if down != None and down.owner != g.uid and (down not in adjacentcells): 
+            adjacentcells.append(down)
+        if left != None and left.owner != g.uid and (left not in adjacentcells): 
+            adjacentcells.append(left)
     #print(len(adjacentcells)            
     return adjacentcells
 
@@ -39,7 +48,6 @@ def find_gold_cells():
                 gold_cells.append(c)
     return gold_cells
     
-
 def find_energy_cells():
     #Find all the energy cells on the board
     energy_cells = []
@@ -50,13 +58,6 @@ def find_energy_cells():
                 energy_cells.append(c)
     return energy_cells
 
-def GetAdjacent( cell ):
-        up = g.GetCell( cell.x, cell.y - 1 )
-        right = g.GetCell( cell.x + 1, cell.y )
-        down = g.GetCell( cell.x, cell.y + 1 )
-        left = g.GetCell( cell.x - 1, cell.y )
-        return ( up, right, down, left )
-
 def distance_to(start,end):
     return (abs(end.x-start.x) + abs(end.y-start.y))
 
@@ -64,20 +65,36 @@ def path_to(cell, target):
     return distance_to(cell,target) + cell.takeTime
 
 def gold_expand():
+    g.Refresh()
     surcell = surrounding_cells(my_cells())
     goldcells = find_gold_cells()
     data = []
-    
+    lastattacked = None
     for cell in surcell:
         for gold in goldcells:
             score = path_to(cell,gold)
             data.append((score,cell))
     data.sort(key = lambda tup: tup[0])
-    print(g.AttackCell(data[0][1].x,data[0][1].y))
+    #print(data[0])
+    if data[0] != lastattacked:
+        lastattacked = g.AttackCell(data[0][1].x,data[0][1].y)
 
-    
+def energy_expand():
+    g.Refresh()
+    surcell = surrounding_cells(my_cells())
+    encells = find_energy_cells()
+    data = []
+    lastattacked = None
+    for cell in surcell:
+        for en in encells:
+            score = path_to(cell,en)
+            data.append((score,cell))
+    data.sort(key = lambda tup: tup[0])
+    #print(data[0])
 
-     
+    if data[0] != lastattacked:
+        lastattacked = g.AttackCell(data[0][1].x,data[0][1].y)   
+
 def evaluate( c, enval, goldval, empty):
     bonus = 0
     if c.takeTime < 5:
@@ -118,28 +135,26 @@ def behaviour():
         g.BuildBase(randcell.x,randcell.y)
     if g.energy >=45:
         boostval = True
-    if g.cellNum < 200:
-        gold_expand()
-    if g.cellNum < 400 and g.cellNum > 200:
+    if g.cellNum < 100:
+        energy_expand()
+    if g.cellNum < 150 and g.cellNum > 100:
         enval = 10
         goldval = 5
         empty = 7
         smart_expand(enval, goldval, empty, boostval)  
     else: 
         enval = 3
-        goldval = 15
+        goldval = 25
         empty = 12
         smart_expand(enval, goldval, empty, boostval)
     
-
 if __name__ == '__main__':
     # Instantiate a Game object.
     g = colorfight.Game()
-    if g.JoinGame('Dumb'):
+    if g.JoinGame('C2'):
         print('hello')
         while True:
-            g.Refresh()
-            #rand_expand() 
+            g.Refresh() 
             behaviour()     
     else:
         print("Failed to join the game!")

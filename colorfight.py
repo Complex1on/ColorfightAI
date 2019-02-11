@@ -127,7 +127,8 @@ class Game:
             if r.status_code == 200:
                 data = r.json()
                 if data['err_code'] == 0:
-                    return True, None, None
+                    print("Attacking")
+                    return self.GetCell(x,y)
                 else:
                     return False, data['err_code'], data['err_msg']
             else:
