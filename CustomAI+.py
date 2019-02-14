@@ -1,7 +1,7 @@
  # You need to import colorfight for all the APIs
 import colorfight
 import random
-
+lastattacked = None
 def my_cells():
     #Goes through the board and finds user's cells
     g.Refresh()
@@ -84,16 +84,20 @@ def energy_expand():
     surcell = surrounding_cells(my_cells())
     encells = find_energy_cells()
     data = []
-    lastattacked = None
     for cell in surcell:
         for en in encells:
             score = path_to(cell,en)
             data.append((score,cell))
     data.sort(key = lambda tup: tup[0])
     #print(data[0])
-
-    if data[0] != lastattacked:
-        lastattacked = g.AttackCell(data[0][1].x,data[0][1].y)   
+    global lastattacked
+    target = data[0][1]
+    if lastattacked == None:
+        lastattacked = target
+        print(g.AttackCell(target.x,target.y))
+    if (target.x != lastattacked.x) and (target.y != lastattacked.y):
+        lastattacked = target
+        print(g.AttackCell(target.x,target.y))  
 
 def evaluate( c, enval, goldval, empty):
     bonus = 0
@@ -151,6 +155,7 @@ def behaviour():
 if __name__ == '__main__':
     # Instantiate a Game object.
     g = colorfight.Game()
+    lastattacked = None 
     if g.JoinGame('C2'):
         print('hello')
         while True:
