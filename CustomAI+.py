@@ -4,7 +4,6 @@ import random
 lastattacked = None
 def my_cells():
     #Goes through the board and finds user's cells
-    g.Refresh()
     mycells = []
     for x in range(g.width):
         for y in range(g.height):
@@ -92,10 +91,10 @@ def energy_expand():
     #print(data[0])
     global lastattacked
     target = data[0][1]
-    if lastattacked == None:
+    if lastattacked == None and g.cdTime < g.currTime:
         lastattacked = target
         print(g.AttackCell(target.x,target.y))
-    if (target.x != lastattacked.x) and (target.y != lastattacked.y):
+    if (target.x != lastattacked.x) and (target.y != lastattacked.y) and g.cdTime < g.currTime:
         lastattacked = target
         print(g.AttackCell(target.x,target.y))  
 
@@ -109,10 +108,18 @@ def evaluate( c, enval, goldval, empty):
         bonus += goldval
     if c.cellType == 'energy':
         bonus += enval
+    up, down, left, right = GetAdjacent(c)
+    if up != None and up.owner == g.uid:
+        bonus += 2
+    if down != None and down.owner == g.uid:
+        bonus += 2
+    if left != None and left.owner == g.uid:
+        bonus += 2
+    if right != None and right.owner == g.uid:
+        bonus += 2
     return bonus/c.takeTime
 
 def smart_expand(enval, goldval, empty, boostval):
-    g.Refresh()
     surcells = surrounding_cells(my_cells())
     attacktarget = random.choice(surcells)
     bestval = evaluate(attacktarget,enval, goldval, empty)
@@ -120,7 +127,8 @@ def smart_expand(enval, goldval, empty, boostval):
         value = evaluate(cell,enval, goldval, empty)
         if value > bestval:
             attacktarget = cell
-    print(g.AttackCell(attacktarget.x,attacktarget.y,boost=boostval))
+    if g.cdTime < g.currTime:
+        print(g.AttackCell(attacktarget.x,attacktarget.y,boost=boostval))
     return "working"
 
 def rand_expand():
@@ -140,7 +148,11 @@ def behaviour():
     if g.energy >=45:
         boostval = True
     if g.cellNum < 100:
-        energy_expand()
+        #energy_expand()
+        enval = 10
+        goldval = 5
+        empty = 7
+        smart_expand(enval, goldval, empty, boostval)
     if g.cellNum < 150 and g.cellNum > 100:
         enval = 10
         goldval = 5
