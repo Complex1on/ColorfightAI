@@ -6,7 +6,7 @@ import threading
 
 hostUrl   = 'http://colorfight.herokuapp.com/'
 #hostUrl   = 'http://localhost:8000/'
-
+lastattacked = None
 def CheckToken(token):
     headers = {'content-type': 'application/json'}
     r = requests.post(hostUrl + 'checktoken', data=json.dumps({'token':token}), headers = headers)
@@ -119,6 +119,17 @@ class Game:
             return False
 
         return True
+
+    def lastattacked(cell):
+        global lastattacked
+        if lastattacked == None:
+            lastattacked = cell
+            return False
+        elif (cell.x != lastattacked.x) and (cell.y != lastattacked.y):
+            lastattacked = cell
+            return False
+        else:
+            return True
 
     def AttackCell(self, x, y, boost = False):
         if self.token != '':

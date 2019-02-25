@@ -4,6 +4,7 @@ import random
 lastattacked = None
 def my_cells():
     #Goes through the board and finds user's cells
+    g.Refresh()
     mycells = []
     for x in range(g.width):
         for y in range(g.height):
@@ -19,7 +20,7 @@ def GetAdjacent( cell ):
         right = g.GetCell( cell.x + 1, cell.y )
         down = g.GetCell( cell.x, cell.y + 1 )
         left = g.GetCell( cell.x - 1, cell.y )
-        return ( up, right, down, left )
+        return  [up, right, down, left]
 
 def surrounding_cells(mycells):
     #takes mycells and finds the surrounding
@@ -53,30 +54,90 @@ def find_energy_cells():
     for x in range(g.width):
         for y in range(g.height):
             c = g.GetCell(x,y)
-            if c.cellType == 'energy':
+            if c.cellType == 'energy' and c.owner != g.uid:
                 energy_cells.append(c)
     return energy_cells
+
+def get_info():
+    g.Refresh()
+    mycells = my_cells()
+    surcells = surrounding_cells(my_cells())
+    goldcells = find_gold_cells()
+    energy_cells = find_energy_cells()
+    return (mycells, surcells, goldcells, energy_cells)
 
 def distance_to(start,end):
     return (abs(end.x-start.x) + abs(end.y-start.y))
 
-def path_to(cell, target):
-    return distance_to(cell,target) + cell.takeTime
+def attack_line(cell,end,mode):
+    
+    if mode == "horiz":
+        if end > 0:
+            x = 1
+            stepx = 1
+        else:
+            x = -1
+            stepx = -1
+        while x != end:
+            g.Refresh()
+            if g.cdTime < g.currTime:
+                print(g.AttackCell(cell.x + x, cell.y ))
+                x += stepx
 
-def gold_expand():
+    if mode == "vert":
+        if end > 0:
+            x = 1
+            stepx = 1
+        else:
+            x = -1
+            stepx = -1
+        while x != end:
+            g.Refresh()
+            if g.cdTime < g.currTime:
+                print(g.AttackCell(cell.x , cell.y + x))
+
+def path_to(start,end):
+    deltax = end.x - start.x
+    deltay = end.y - start.y
+    if deltax==0:
+        if deltay < 0:
+            deltay-=1
+        if deltay>0:
+            deltay+=1
+        attack_line(start,deltay,"vert")
+    elif deltay==0:
+        if deltax<0:
+            deltax-=1
+        if deltax>0:
+            deltax+=1
+        attack_line(start,deltax,"horiz")
+    else:
+        if deltax < 0:
+            deltax-=1
+        if deltax>0:
+            deltax+=1
+        if deltay<0:
+            deltay-=1
+        if deltay>0:
+            deltay+=1
+        attack_line(start,deltax,"horiz")
+        finishedx=g.GetCell(end.x,start.y)
+        attack_line(finishedx,deltay,"vert")
+
+def Expand_energy():
     g.Refresh()
-    surcell = surrounding_cells(my_cells())
-    goldcells = find_gold_cells()
-    data = []
-    lastattacked = None
-    for cell in surcell:
-        for gold in goldcells:
-            score = path_to(cell,gold)
-            data.append((score,cell))
-    data.sort(key = lambda tup: tup[0])
-    #print(data[0])
-    if data[0] != lastattacked:
-        lastattacked = g.AttackCell(data[0][1].x,data[0][1].y)
+    info = get_info()
+    lowestdist = []
+    expand = True
+    for cell in info[0]:
+        for energy in info[3]:
+            start = g.GetCell(cell.x,cell.y)
+            end = g.GetCell(energy.x,energy.y)
+            dist = distance_to(start,end)
+            lowestdist.append((dist,start,end))
+    lowestdist.sort(key = lambda tup: tup[0])
+    path_to(lowestdist[0][1],lowestdist[0][2])
+    lowestdist = []
 
 def energy_expand():
     g.Refresh()
@@ -148,11 +209,7 @@ def behaviour():
     if g.energy >=45:
         boostval = True
     if g.cellNum < 100:
-        #energy_expand()
-        enval = 10
-        goldval = 5
-        empty = 7
-        smart_expand(enval, goldval, empty, boostval)
+        Expand_energy()
     if g.cellNum < 150 and g.cellNum > 100:
         enval = 10
         goldval = 5
